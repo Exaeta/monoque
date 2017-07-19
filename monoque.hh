@@ -30,10 +30,10 @@ SOFTWARE.
 
 /*
   Like vector, but non-contiguous and has worst-case O(1) push_back and worst-case O(1) indexing.
-  This is just a simple proof of concept. It does not have most of the required STL elements and 
-  is not exception safe, and does not have a way to delete the values after they are no longer
-  needed. Also, the indexing was simplified significantly from the original design to make it
-  simpler to illustrate.
+  This is just a simple proof of concept at the present time. It is not a complete STL compatible
+  container yet.
+  
+  TODO: Allocator Support, Iterator Support, STL Container Support.
 
  */
 namespace rpnx{
