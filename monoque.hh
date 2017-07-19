@@ -1,6 +1,6 @@
 /*
 "Monoque Data Structure Implementation"
-Copyright (c) 2016 Ryan P. Nicholl <r.p.nicholl@gmail.com>
+Copyright (c) 2017 Ryan P. Nicholl <r.p.nicholl@gmail.com>
 All rights reserved.
 
 Redistribution and use in source and binary forms are permitted
