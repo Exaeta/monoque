@@ -49,7 +49,7 @@ private:
     asm("bsrq %1,%0" : "=r"(i) : "r"(n));
     return n == 0 ? 0 : i + 1;
 #else
-    int i = 0; while ((1 << i) <= at) i++;
+    int i = 0; while ((1 << i) <= n) i++;
 #endif
     return i;
   }
