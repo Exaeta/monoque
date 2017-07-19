@@ -64,7 +64,7 @@ private:
  
   static inline size_t index2_pv(size_t at)
   {
-    return at & ((1<<index1_pv(at))-1);
+    return at & (sizeat_pv(at)-1);
   }
   
   static inline std::tuple<size_t, size_t> index_pv(size_t at)
