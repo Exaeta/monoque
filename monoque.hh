@@ -51,7 +51,7 @@ private:
     size_t i;
     
     asm("bsrq %1,%0" : "=r"(i) : "r"(n));
-    return n == 0 ? 0 : i + 1;
+    return n <= 1 ? 0 : i + 1;
 #else
     int i = 0; while ((1 << i) <= n) i++;
 #endif
