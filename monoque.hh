@@ -59,7 +59,7 @@ private:
 
   static inline size_t sizeat_pv(size_t at)
   {
-    return 1 << index1_pv(at);
+    return at <= 1 ? 2 : (1 << index1_pv(at));
   }
  
   static inline size_t index2_pv(size_t at)
