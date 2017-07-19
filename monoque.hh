@@ -48,14 +48,13 @@ private:
   static inline size_t index1_pv(size_t n)
   {
 #ifdef __x86_64__
-    size_t i;
-    
+    size_t i;    
     asm("bsrq %1,%0" : "=r"(i) : "r"(n));
-    return n <= 1 ? 0 : i + 1;
+    return n == 0 ? 0 : i;
 #else
     int i = 0; while ((1 << i) <= n) i++;
 #endif
-    return i;
+    return i == 0 ? 0 : i - 1;
   }
 
   static inline size_t sizeat_pv(size_t at)
