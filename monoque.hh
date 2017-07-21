@@ -48,7 +48,7 @@ private:
   static inline size_t index1_pv(size_t n)
   {
 #ifdef __x86_64__
-    size_t i;    
+    size_t i = 0;    
     asm("bsrq %1,%0" : "=r"(i) : "r"(n));
     return n == 0 ? 0 : i;
 #else
@@ -120,13 +120,7 @@ public:
 
   void push_back (T t)
   {
-    if (size_pv == 0)
-
-      {
-        if (!data_pv[index1_pv(size_pv)]) data_pv[0] = (T*) new char[sizeof(T)];
-      }
-    
-    else if (index1_pv(size_pv-1) != index1_pv(size_pv))
+    if (index2_pv(size_pv) == 0)
       {
         if (!data_pv[index1_pv(size_pv)]) data_pv[index1_pv(size_pv)] = (T*) new char[sizeof(T)*sizeat_pv(size_pv)];
       }
