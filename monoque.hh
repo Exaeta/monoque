@@ -1,6 +1,9 @@
 /*
-"Monoque Data Structure Implementation" http://rpnx.net/monoque.pdf
-Copyright (c) 2017 Ryan P. Nicholl <r.p.nicholl@gmail.com> http://rpnx.net/
+Monoque Data Structure
+
+Copyright (c) 2017, 2018 Ryan P. Nicholl <exaeta@protonmail.com> http://rpnx.net/
+ -- Please let me know if you find this structure useful, thanks! 
+ 
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -9,7 +12,6 @@ in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
@@ -26,13 +28,17 @@ SOFTWARE.
 #define RPNX_MONOQUE_HH
 
 #include <array>
-#include <tuple>
+#include <assert.h>
 #include <atomic>
+#include <iterator>
+#include <tuple>
 /*
-  Like vector, but non-contiguous and has worst-case O(1) push_back and worst-case O(1) indexing.
-  This is just a simple proof of concept at the present time. It is not a complete STL compatible
+  Like vector, but non-contiguous and has worst-case O(1) push_back and
+  worst-case O(1) indexing.
+  This is just a simple proof of concept at the present time. It is not a
+  complete STL compatible
   container yet.
-  
+
   TODO: Allocator Support, Iterator Support, STL Container Support.
 
  */
@@ -47,201 +53,294 @@ SOFTWARE.
 #define rpnx_unlikely(x) rpnx_expect(x, 0)
 #endif
 
-
-
-namespace rpnx{
-template <typename T, typename Allocator = std::allocator<T> >
-class monoque
-{
-  size_t size_pv;
-  std::array<T*, sizeof(T*)*8>   data_pv  ;
-
-  //size_t cap;
-private:
- 
-  static inline size_t index1_pv(size_t n) __attribute__((always_inline))  
-  {
-#ifdef __x86_64__ 
-    if (rpnx_unlikely(n==0)) return 0;
-    else
-      {
-        size_t i;
-        asm("bsrq %1,%0\n" : "=r"(i) : "r"(n));
-        return i;
-      }
-#else
-    int i = 0; while ((1 << i) <= n) i++;
-    return i == 0 ? 0 : i - 1;
-#endif   
-  }
-
-  static inline size_t sizeat_pv(size_t at)  __attribute__((always_inline))
-  {
-    if (rpnx_unlikely(at <= 1)) return 2;
-    else return (size_t(1) << index1_pv(at));
-  }
- 
-
-  static inline size_t index2_pv(size_t n) __attribute__((always_inline))
-  {
-#if defined(__x86_64__) //&& !defined(__clang__)
-    // No idea why, but for some reason this is slow as fuck in clang -O2.
-    if (rpnx_unlikely(n<=1)) return n&1;
-    else
-      {
-        size_t i;
-        asm("bsrq %1,%0\n" : "=r"(i) : "r"(n));
-        return n ^ (size_t(1) << i);
-      }
-#else
-  return n & (sizeat_pv(n)-1);
-#endif
-  }
-  
-  static inline std::tuple<size_t, size_t> index_pv(size_t at)  __attribute__((always_inline))
-  {
-    return {index1_pv(at), index2_pv(at)};
-  }
-
-  
+namespace rpnx {
+template <typename T, typename Allocator = std::allocator<T>> class monoque : private Allocator {
 public:
   using value_type = T;
   using allocator_type = Allocator;
-  using size_type = std::size_t;
-  using difference_type = std::ptrdiff_t;
-  using referece = value_type&;
-  using const_reference = value_type const &;
-  using pointer = typename std::allocator_traits<Allocator>::pointer;
-  using const_pointer = typename std::allocator_traits<Allocator>::const_pointer;
+  using const_reference = typename allocator_type::const_reference;
+  using pointer = typename allocator_type::pointer;
+  using const_pointer = typename allocator_type::const_pointer;
+  using size_type = typename allocator_type::size_type;
+  using reference = typename Allocator::reference;
 
-  class iterator
-  {
-    monoque *m;
-    size_type i;
+  static_assert(std::is_same<size_type, size_t>::value, "currently unsupported");
+  static_assert(std::is_same<reference, T &>::value, "wut");
+
+private:
+  size_t size_pv;
+  std::array<pointer, sizeof(T *) * 8> data_pv;
+
+private:
+  static inline size_t index1_pv(size_t n) __attribute__((always_inline)) {
+#ifdef __x86_64__
+    if (rpnx_unlikely(n == 0))
+      return 0;
+    else {
+      size_t i;
+      asm("bsrq %1,%0\n" : "=r"(i) : "r"(n));
+      return i;
+    }
+#else
+    int i = 0;
+    while ((1 << i) <= n)
+      i++;
+    return i == 0 ? 0 : i - 1;
+#endif
+  }
+
+  static inline size_t sizeat_pv(size_t at) __attribute__((always_inline)) {
+    if (rpnx_unlikely(at <= 1))
+      return 2;
+    else
+      return (size_t(1) << index1_pv(at));
+  }
+
+  static inline size_t index2_pv(size_t n) __attribute__((always_inline)) {
+#if defined(__x86_64__) //&& !defined(__clang__)
+    // No idea why, but for some reason this is slow as fuck in clang -O2.
+    if (rpnx_unlikely(n <= 1))
+      return n & 1;
+    else {
+      size_t i;
+      asm("bsrq %1,%0\n" : "=r"(i) : "r"(n));
+      return n ^ (size_t(1) << i);
+    }
+#else
+    return n & (sizeat_pv(n) - 1);
+#endif
+  }
+
+  static inline std::tuple<size_t, size_t> index_pv(size_t at) __attribute__((always_inline)) { return std::tuple<size_t, size_t>{index1_pv(at), index2_pv(at)}; }
+
+  void check_cleanup() {}
+
+public:
+  class const_iterator {
   public:
-    iterator()
-      : m (nullptr), i(0)
-    {
-    }
+    // template <typename T, Allocator>
+    friend class monoque<T, Allocator>;
+    friend class monoque<T, Allocator>::iterator;
 
-    using difference_type = std::ptrdiff_t;
-    using value_type = T;
-    using pointer =typename std::allocator_traits<Allocator>::pointer;
+  protected:
+    monoque<T, Allocator> const *m;
+    size_type i;
 
-    iterator(const iterator&)=default;
-    iterator(iterator &&)=default;
+  public:
+    const_iterator() : m(nullptr), i(0) {}
 
-    iterator & operator=(iterator const&)=default;
-    iterator & operator=(iterator &&)=default;
+    using value_type = monoque<T, Allocator>::value_type;
+    using difference_type = ssize_t;
+    using pointer = T const *;
+    using reference = T const &;
+    using category = std::random_access_iterator_tag;
 
-    T  & operator*() const
-    {
-      return (*m)[i];
-    }
+    const_iterator(const const_iterator &) = default;
+    const_iterator(const_iterator &&) = default;
 
-    iterator & operator++()
-    {
+    const_iterator &operator=(const_iterator const &) = default;
+    const_iterator &operator=(const_iterator &&) = default;
+
+    value_type const &operator*() const { return (*m)[i]; }
+
+    const_iterator &operator++() {
       i++;
       return *this;
     }
 
-    iterator operator++(int)
-    {
-      iterator copy = *this;
+    const_iterator operator++(int) {
+      const_iterator copy = *this;
       i++;
       return copy;
     }
 
-    iterator & operator +=(difference_type n)
-    {
-      i+=n;
+    const_iterator &operator--() {
+      i--;
       return *this;
     }
 
-    iterator & operator -=(difference_type n)
-    {
-      i-=n;
+    const_iterator operator--(int) {
+      const_iterator copy = *this;
+      i--;
+      return copy;
+    }
+
+    const_iterator &operator+=(difference_type n) {
+      i += n;
       return *this;
     }
 
-    value_type & operator[](difference_type n) const
-    {
-      return *(*this+i);
+    const_iterator &operator-=(difference_type n) {
+      i -= n;
+      return *this;
     }
 
-    difference_type operator - (iterator const & other) const
-    {
-      return i - other.i;
+    const_iterator operator+(difference_type n) const {
+      const_iterator copy = *this;
+      copy.i += n;
+      return copy;
     }
 
-    iterator operator +(difference_type n) const
-    {
+    const_iterator operator-(difference_type n) const {
+      const_iterator copy = *this;
+      copy.i -= n;
+      return copy;
+    }
+
+    bool operator==(const_iterator const &o) const { return m == o.m && i == o.i; }
+
+    bool operator!=(const_iterator const &o) const { return m != o.m || i != o.i; }
+
+    bool operator<(const_iterator const &o) const { return i < o.i; }
+
+    bool operator<=(const_iterator const &o) const { return i <= o.i; }
+
+    bool operator>(const_iterator const &o) const { return i > o.i; }
+
+    bool operator>=(const_iterator const &o) const { return i >= o.i; }
+
+    value_type const &operator[](difference_type n) const { return (*m)[i + n]; }
+
+    difference_type operator-(const_iterator const &other) const { return i - other.i; }
+  };
+
+  class iterator : public const_iterator {
+  public:
+    using value_type = typename monoque<T, Allocator>::value_type;
+    using difference_type = ssize_t;
+    using pointer = T *;
+    using reference = T &;
+    using iterator_category = std::random_access_iterator_tag;
+
+    iterator() : const_iterator() {}
+    iterator(iterator const &) = default;
+    iterator(const_iterator const &) = delete;
+
+    reference operator*() const { return const_cast<reference>(this->const_iterator::operator*()); }
+
+    pointer operator->() const { return &const_cast<reference>(this->const_iterator::operator*()); }
+
+    iterator &operator++() {
+      const_iterator::operator++();
+      return *this;
+    }
+
+    iterator operator++(int) {
+      iterator copy = *this;
+      const_iterator::operator++(0);
+      return copy;
+    }
+
+    iterator &operator--() {
+      const_iterator::operator--();
+      return *this;
+    }
+
+    iterator operator--(int) {
+      iterator copy = *this;
+      const_iterator::operator--(0);
+      return copy;
+    }
+
+    iterator &operator+=(ssize_t n) {
+      this->i += n;
+      return *this;
+    }
+
+    iterator &operator-=(ssize_t n) {
+      this->i -= n;
+      return *this;
+    }
+
+    iterator operator+(difference_type n) const {
       iterator copy = *this;
       copy.i += n;
       return copy;
     }
 
-
-    iterator operator -(difference_type n) const
-    {
+    iterator operator-(difference_type n) const {
       iterator copy = *this;
       copy.i -= n;
       return copy;
     }
 
-    bool operator ==(iterator const &o) const
-    {
-      return m == o.m && i == o.i;
-    }
+    value_type &operator[](difference_type n) const { return const_cast<T &>(const_iterator::operator[](n)); }
 
-
-    bool operator !=(iterator const &o) const
-    {
-      return m != o.m && i != o.i;
-    }
-
-    bool operator <(iterator const &o) const
-    {
-      return i < o.i;
-    }
-    
-    bool operator <=(iterator const &o) const
-    {
-      return i <= o.i;
-    }
-
-    bool operator >(iterator const &o) const
-    {
-      return i > o.i;
-    }
-    
-    bool operator >=(iterator const &o) const
-    {
-      return i >= o.i;
-    }
+    difference_type operator-(const_iterator const &other) const { return this->i - other.i; }
   };
 
   using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  monoque()
-    : size_pv(0)
-  {
-    for (auto & x: data_pv) x = nullptr;
+  monoque() : Allocator(std::allocator<T>()), size_pv(0) {
+    for (auto &x : data_pv)
+      x = nullptr;
   }
 
-  ~monoque()
-  {
-    if (!std::is_trivially_destructible<T>::value) while (size() != 0) pop_back();
+  explicit monoque(allocator_type const &alloc) : allocator_type(alloc), size_pv(0) {
 
-    for (auto & x: data_pv) if (x != nullptr) delete[] (char*) x;
+    for (auto &a : data_pv)
+      a = nullptr;
   }
 
-  inline T & operator[](size_t at)  //__attribute__((always_inline)) 
+  explicit monoque(size_type n, allocator_type const &alloc = std::allocator<T>()) : monoque(alloc) { resize(n); }
+
+  explicit monoque(size_type n, value_type const &val, allocator_type const &alloc = std::allocator<T>()) : monoque(alloc) {
+
+    for (size_type i = 0; i != n; i++) {
+      push_back(val);
+    }
+  }
+
+  monoque(std::initializer_list<value_type> il, allocator_type const &alloc = std::allocator<T>()) : monoque(alloc) { assign(il.begin(), il.end()); }
+
+  template <typename It> monoque(It begin, It end, allocator_type const &alloc = std::allocator<T>()) : monoque(alloc) {
+    for (auto i = begin; i != end; i++) {
+      push_back(*i);
+    }
+  }
+
+  monoque(monoque<T, Allocator> const &other) : monoque(other.get_allocator()) {
+    using namespace std;
+    for (auto const &x : other)
+      push_back(x);
+  }
+
+  monoque(monoque<T, Allocator> &&other) : monoque(other.get_allocator()) { swap(other); }
+
+  monoque<T, Allocator> &operator=(monoque<T, Allocator> const &other) {
+
+    monoque<T, Allocator> copy(get_allocator());
+    copy.assign(other.begin(), other.end());
+    swap(copy);
+    return *this;
+  }
+
+  monoque<T, Allocator> &operator=(monoque<T, Allocator> &&other) {
+    swap(other);
+    return *this;
+  }
+
+  ~monoque() {
+    if (!std::is_trivially_destructible<T>::value)
+      while (size() != 0)
+        pop_back();
+
+    for (size_t i = 0; i < sizeof(void *) * 8; i++) {
+      size_t sz = 1 << i;
+      if (sz == 1)
+        sz = 2;
+      if (data_pv[i] != nullptr)
+        Allocator::deallocate(data_pv[i], sz);
+    }
+  }
+
+  inline T &operator[](size_t at) //__attribute__((always_inline))
   {
 
     using namespace std;
-#if  defined(__clang__)
-     std::atomic_signal_fence(memory_order_seq_cst);
+#if defined(__clang__)
+    std::atomic_signal_fence(memory_order_seq_cst);
 #endif
 
     size_t index1;
@@ -249,71 +348,120 @@ public:
 
     index1 = index1_pv(at);
     index2 = index2_pv(at);
-    //    index2 = index2_pv(at);
-
 
     return data_pv[index1][index2];
   }
 
+  reference back() { return this->operator[](size() - 1); }
 
-  inline T const & operator[](size_t at) const //  __attribute__((always_inline)) 
+  const_reference back() const { return this->operator[](size() - 1); }
+
+  reference front() { return this->operator[](0); }
+
+  const_reference front() const { return this->operator[](0); }
+
+  inline T const &operator[](size_t at) const //  __attribute__((always_inline))
   {
     using namespace std;
 
 #if defined(__clang__)
     std::atomic_signal_fence(memory_order_seq_cst);
+// clang does stupid shit without this
 #endif
 
     size_t index1;
     size_t index2;
-    
+
     tie(index1, index2) = index_pv(at);
     //    tie(index2) = index2_pv(at);
 
     return data_pv[index1][index2];
   }
 
+  size_t size() const { return size_pv; }
 
-  size_t size() const
-  {
-    return size_pv;
+  allocator_type const &get_allocator() const { return *this; }
+
+  template <typename It> inline void assign(It begin, It end) {
+    monoque<T, Allocator> obj(begin, end, get_allocator());
+    swap(obj);
+    return;
   }
 
-  inline void push_back (T t)
-  {
-    if (index2_pv(size_pv) == 0)
-      {
-        if (!data_pv[index1_pv(size_pv)]) data_pv[index1_pv(size_pv)] = (T*) new char[sizeof(T)*sizeat_pv(size_pv)];
-      }
+  inline void resize(size_type n) {
+    while (size() > n)
+      pop_back();
+    while (size() < n)
+      push_back(value_type());
+  }
 
-    new ((void*)(((T*)data_pv[index1_pv(size_pv)])+index2_pv(size_pv))) T(std::move(t));
+  inline void push_back(T t) {
+    if (index2_pv(size_pv) == 0 && nullptr == data_pv[index1_pv(size_pv)]) {
+      data_pv[index1_pv(size_pv)] = Allocator::allocate(sizeat_pv(size_pv));
+    }
+    this->Allocator::construct(data_pv[index1_pv(size_pv)] + index2_pv(size_pv), std::move(t));
     size_pv++;
   }
 
-  void pop_back()
-  {
-    this->operator[](size_pv-1).T::~T();
+  void pop_back() {
+    assert(size() >= 1);
+    Allocator::destroy(&this->operator[](size_pv - 1));
     size_pv--;
   }
 
-  void shink_to_fit()
-  {
-    size_t mindex = 0;
-    if (size_pv != 0) mindex = index1_pv(size_pv-1) + 1;
-    for (size_t i = mindex; i < sizeof(T*)*8; i++)
-      {
-        if (data_pv[i] != nullptr) 
-          {
-            delete[] (char*) data_pv[i];
-            data_pv[i] = nullptr;
-          }
-        else break;
-      }    
+  void swap(monoque<T, Allocator> &other) {
+    std::swap(static_cast<allocator_type &>(*this), static_cast<allocator_type &>(other));
+    std::swap(data_pv, other.data_pv);
+    std::swap(size_pv, other.size_pv);
   }
 
-  
+  friend void swap(rpnx::monoque<T, Allocator> &a, rpnx::monoque<T, Allocator> &b) { a.swap(b); }
+
+  void shink_to_fit() {
+    size_t mindex = 0;
+    if (size_pv != 0)
+      mindex = index1_pv(size_pv - 1) + 1;
+    for (size_t i = mindex; i < sizeof(T *) * 8; i++) {
+      if (data_pv[i] != nullptr) {
+        delete[](char *) data_pv[i];
+        data_pv[i] = nullptr;
+      } else
+        break;
+    }
+  }
+
+  inline iterator begin() {
+    iterator it;
+    it.i = 0;
+    it.m = this;
+    return it;
+  }
+
+  inline iterator end() {
+    iterator it;
+    it.i = size();
+    it.m = this;
+    return it;
+  }
+
+  const_iterator cbegin() const {
+    const_iterator it;
+    it.i = 0;
+    it.m = this;
+    return it;
+  }
+
+  const_iterator cend() const {
+    const_iterator it;
+    it.i = size();
+    it.m = this;
+    return it;
+  }
+
+  const_iterator end() const { return cend(); }
+  const_iterator begin() const { return cbegin(); }
 };
 
-}//namespace rpnx
+} // namespace rpnx
 
 #endif
