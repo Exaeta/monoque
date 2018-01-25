@@ -32,6 +32,8 @@ SOFTWARE.
 #include <atomic>
 #include <iterator>
 #include <tuple>
+#include <inttypes.h>
+#include <sys/types.h>
 /*
   Like vector, but non-contiguous and has worst-case O(1) push_back and
   worst-case O(1) indexing.
@@ -52,6 +54,8 @@ SOFTWARE.
 #define rpnx_likely(x) rpnx_expect(x, 1)
 #define rpnx_unlikely(x) rpnx_expect(x, 0)
 #endif
+
+
 
 namespace rpnx {
 template <typename T, typename Allocator = std::allocator<T>> class monoque : private Allocator {
@@ -90,13 +94,17 @@ private:
   }
 
   static inline size_t sizeat_pv(size_t at) __attribute__((always_inline)) {
+#if true //  RPNX_USE_OLD_OPS
     if (rpnx_unlikely(at <= 1))
       return 2;
     else
       return (size_t(1) << index1_pv(at));
+#else
+    
+#endif      
   }
 
-  static inline size_t index2_pv(size_t n) __attribute__((always_inline)) {
+  static inline size_t index2_pv(size_t n) __attribute__((always_inline)) {   
 #if defined(__x86_64__) //&& !defined(__clang__)
     // No idea why, but for some reason this is slow as fuck in clang -O2.
     if (rpnx_unlikely(n <= 1))
@@ -340,7 +348,8 @@ public:
 
     using namespace std;
 #if defined(__clang__)
-    std::atomic_signal_fence(memory_order_seq_cst);
+  std::atomic_signal_fence(memory_order_seq_cst);
+// clang does stupid shit without this
 #endif
 
     size_t index1;
@@ -365,7 +374,7 @@ public:
     using namespace std;
 
 #if defined(__clang__)
-    std::atomic_signal_fence(memory_order_seq_cst);
+  //  std::atomic_signal_fence(memory_order_seq_cst);
 // clang does stupid shit without this
 #endif
 

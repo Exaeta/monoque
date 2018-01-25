@@ -33,8 +33,9 @@ SOFTWARE.
 #include <queue>
 #include <random>
 #include <thread>
+#include <inttypes.h>
 #include <vector>
-
+volatile size_t vol = 0;
 int main() {
   using namespace std;
   using namespace std::chrono;
@@ -42,9 +43,11 @@ int main() {
 
   mt19937_64 r;
 
-  size_t round_count = 16000000;
-  size_t round_secondary = round_count * 4;
-  size_t runs = 3;
+  size_t round_count = 1024*1024*4;
+  size_t round_secondary = round_count * 4.0;
+  double round_mult = 1.0/16;
+  size_t runs = 12;
+  
 
   vector<size_t> rds;
   for (size_t i = 0; i < round_count; i++) {
@@ -57,7 +60,7 @@ int main() {
   system_clock::time_point start_time_tt;
   system_clock::time_point end_time_tt;
 
-  cout << "For linear structures of size " << round_count << " and random access " << round_secondary << " times, discovered that: " << endl;
+  cout << "For linear structures of size " << round_count << " and random access " << round_secondary << " times, round factor " << round_mult << " discovered that: " << endl;
 
   double fast_push = std::numeric_limits<double>::max();
   double fast_access = std::numeric_limits<double>::max();
@@ -77,9 +80,9 @@ int main() {
     //cout << m.size() << ' ' << fast_push << endl;
 
     start_time = system_clock::now();
-    volatile size_t t = 0;
+    //size_t t = 0;
     for (size_t i = 0; i < round_secondary; i++) {
-      t += m[rds[i % round_count]];
+      vol += m[rds[i % round_count]];
     }
     end_time = system_clock::now();
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
@@ -102,13 +105,13 @@ int main() {
     //cout << m.size() << ' ' << fast_push << endl;
 
     start_time = system_clock::now();
-    volatile size_t t = 0;
+    //size_t t = 0;
     for (size_t i = 0; i < round_secondary; i++) {
-      t += m[rds[i % round_count]];
+      vol += m[rds[i % round_count]];
     }
     end_time = system_clock::now();
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
-    // cout << t << ' ' << fast_access << endl;
+  //  cout << t << ' ' << fast_access << endl;
   }
   cout << "monoque<size_t> average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
   cout << "monoque<size_t> average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
@@ -127,13 +130,13 @@ int main() {
     //cout << m.size() << ' ' << fast_push << endl;
 
     start_time = system_clock::now();
-    volatile size_t t = 0;
+    //size_t t = 0;
     for (size_t i = 0; i < round_secondary; i++) {
-      t += m[rds[i % round_count]];
+      vol += m[rds[i % round_count]];
     }
     end_time = system_clock::now();
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
-    // cout << t << ' ' << fast_access << endl;
+    //cout << t << ' ' << fast_access << endl;
   }
 
   cout << "deque<size_t> average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
@@ -153,18 +156,19 @@ int main() {
     //cout << m.size() << ' ' << fast_push << endl;
 
     start_time = system_clock::now();
-    volatile size_t t = 0;
-    for (size_t i = 0; i < round_count; i++) {
-      t += m.top();
+    //size_t t = 0;
+    for (size_t i = 0; i < round_count*round_mult; i++) {
+      vol += m.top();
       m.pop();
+      m.push(rds[(i+17) % round_count]);
     }
     end_time = system_clock::now();
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
-    // cout << t << ' ' << fast_access << endl;
+   // cout << t << ' ' << fast_access << endl;
   }
 
   cout << "priority_queue<size_t, vector> average push() time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "priority_queue<size_t, vector> average top()+pop() time: " << fast_access / round_secondary << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, vector> average top()+pop()+push() time: " << fast_access / round_count /round_mult<< " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -180,18 +184,19 @@ int main() {
     //cout << m.size() << ' ' << fast_push << endl;
 
     start_time = system_clock::now();
-    volatile size_t t = 0;
-    for (size_t i = 0; i < round_count; i++) {
-      t += m.top();
+    //size_t t = 0;
+    for (size_t i = 0; i < round_count*round_mult; i++) {
+      vol += m.top();
       m.pop();
+      m.push(rds[(i+17) % round_count]);
     }
     end_time = system_clock::now();
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
-    // cout << t << ' ' << fast_access << endl;
+    //cout << t << ' ' << fast_access << endl;
   }
 
   cout << "priority_queue<size_t, monoque> average push() time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "priority_queue<size_t, monoque> average top()+pop() time: " << fast_access / round_secondary << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, monoque> average top()+pop()+push() time: " << fast_access / round_count /round_mult << " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -204,19 +209,20 @@ int main() {
     }
     end_time = system_clock::now();
     fast_push = std::min(fast_push, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
-    //cout << m.size() << ' ' << fast_push << endl;
+   // cout << m.size() << ' ' << fast_push << endl;
 
     start_time = system_clock::now();
-    volatile size_t t = 0;
-    for (size_t i = 0; i < round_count; i++) {
-      t += m.top();
+    //size_t t = 0;
+    for (size_t i = 0; i < round_count*round_mult; i++) {
+      vol += m.top();
       m.pop();
+      m.push(rds[(i+17) % round_count]);
     }
     end_time = system_clock::now();
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
-    // cout << t << ' ' << fast_access << endl;
+  //  cout << t << ' ' << fast_access << endl;
   }
 
   cout << "priority_queue<size_t, deque> average push() time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "priority_queue<size_t, deque> average top()+pop() time: " << fast_access / round_secondary << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, deque> average top()+pop()+push() time: " << fast_access / round_count / round_mult << " nanoseconds" << endl;
 }
