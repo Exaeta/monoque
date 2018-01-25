@@ -347,10 +347,6 @@ public:
   {
 
     using namespace std;
-#if defined(__clang__)
-  std::atomic_signal_fence(memory_order_seq_cst);
-// clang does stupid shit without this
-#endif
 
     size_t index1;
     size_t index2;
@@ -372,11 +368,6 @@ public:
   inline T const &operator[](size_t at) const //  __attribute__((always_inline))
   {
     using namespace std;
-
-#if defined(__clang__)
-  //  std::atomic_signal_fence(memory_order_seq_cst);
-// clang does stupid shit without this
-#endif
 
     size_t index1;
     size_t index2;
