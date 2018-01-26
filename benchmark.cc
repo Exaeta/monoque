@@ -45,8 +45,8 @@ int main() {
 
   size_t round_count = 1024*1024*4;
   size_t round_secondary = round_count * 4.0;
-  double round_mult = 1.0/16;
-  size_t runs = 12;
+  double round_mult = 1.0/4;
+  size_t runs = 3;
   
 
   vector<size_t> rds;
