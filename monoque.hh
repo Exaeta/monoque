@@ -34,6 +34,7 @@ SOFTWARE.
 #include <tuple>
 #include <inttypes.h>
 #include <sys/types.h>
+#include <string.h>
 /*
   Like vector, but non-contiguous and has worst-case O(1) push_back and
   worst-case O(1) indexing.
@@ -44,7 +45,7 @@ SOFTWARE.
   TODO: Allocator Support, Iterator Support, STL Container Support.
 
  */
-
+//#undef __x86_64__ // disable optimizations for testing
 #ifndef rpnx_expect
 #if false
 #define rpnx_expect(x, y) x
@@ -75,10 +76,21 @@ private:
   size_t size_pv;
   std::array<pointer, sizeof(T *) * 8> data_pv;
 
+  static inline size_t bfill(size_t n)
+  {
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    if (sizeof(size_t) > 4) n |= n >> 32;
+    return n;
+  }
+
 private:
   static inline size_t index1_pv(size_t n) __attribute__((always_inline)) {
 #ifdef __x86_64__
-    if (rpnx_unlikely(n == 0))
+    if (n == 0)
       return 0;
     else {
       size_t i;
@@ -86,21 +98,23 @@ private:
       return i;
     }
 #else
-    int i = 0;
-    while ((1 << i) <= n)
-      i++;
-    return i == 0 ? 0 : i - 1;
+    if (n == 0) return 0;
+    return ffsll(~bfill(n))-2;
 #endif
   }
 
   static inline size_t sizeat_pv(size_t at) __attribute__((always_inline)) {
-#if true //  RPNX_USE_OLD_OPS
-    if (rpnx_unlikely(at <= 1))
+#ifdef __x86_64__
+    if (at == 0) return 2;
+    size_t i;
+    asm("bsrq %1,%0\n" : "=r"(i) : "r"(at));
+    return size_t(1) << i;
+#else
+    //assert(bfill(at >> 1) == (bfill(at) >> 1));
+    if (at == 0)
       return 2;
     else
-      return (size_t(1) << index1_pv(at));
-#else
-    
+     return bfill(at >> 1) + 1;    
 #endif      
   }
 
@@ -115,7 +129,7 @@ private:
       return n ^ (size_t(1) << i);
     }
 #else
-    return n & (sizeat_pv(n) - 1);
+    return n & (bfill(n) >> 1) ;
 #endif
   }
 
@@ -224,9 +238,9 @@ public:
     iterator(iterator const &) = default;
     iterator(const_iterator const &) = delete;
 
-    reference operator*() const { return const_cast<reference>(this->const_iterator::operator*()); }
+    inline reference operator*() const { return const_cast<reference>(this->const_iterator::operator*()); }
 
-    pointer operator->() const { return &const_cast<reference>(this->const_iterator::operator*()); }
+    inline pointer operator->() const { return &const_cast<reference>(this->const_iterator::operator*()); }
 
     iterator &operator++() {
       const_iterator::operator++();
