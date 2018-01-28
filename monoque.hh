@@ -413,6 +413,11 @@ public:
     return;
   }
 
+  void clear() {
+    monoque<T, Allocator> obj(get_allocator());
+    swap(obj);
+  }
+
   bool empty() const { return size() == 0; }
 
   inline void resize(size_type n) {
