@@ -103,7 +103,7 @@ private:
       return i;
     }
 #else
-#warning Generic implementation
+#error Broken
     if (n == 0)
       return 0;
    size_t a = bfill(n);
