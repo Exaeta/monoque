@@ -41,13 +41,13 @@ SOFTWARE.
   Like vector, but non-contiguous and has worst-case O(1) push_back and
   worst-case O(1) indexing.
   This is just a simple proof of concept at the present time. It is not a
-  complete STL compatible
-  container yet.
+  complete STL compatible container yet.
 
-  TODO: Allocator Support, Iterator Support, STL Container Support.
+  TODO: 
+  Works in progress:
+      Allocator Support, Iterator Support, STL Container Support.
 
  */
-//#undef __x86_64__ // disable optimizations for testing
 #ifndef rpnx_expect
 #if false
 #define rpnx_expect(x, y) x
@@ -132,7 +132,6 @@ private:
     static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
     return n & ((1 << (63 - __builtin_clzll(n | 2))) - 1);
 #elif defined(__x86_64__)
-    // No idea why, but for some reason this is slow as fuck in clang -O2.
     if (n <= 1)
       return n & 1;
     else {
@@ -398,7 +397,6 @@ public:
     size_t index2;
 
     tie(index1, index2) = index_pv(at);
-    //    tie(index2) = index2_pv(at);
 
     return data_pv[index1][index2];
   }
