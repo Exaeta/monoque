@@ -91,7 +91,7 @@ private:
   static inline size_t index1_pv(size_t n) {
 #if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull && ULONG_LONG_MAX == SIZE_MAX
     return 63 - __builtin_clzll(n | 1);
-#elif defined(__GNUC__) && SIZE_MAX == 4294967295ull && UINT_MAX == SIZE_MAX
+#elif defined(__GNUC__) && SIZE_MAX == 4294967295ull && UINT_MAX == SIZE_MAX && !defined(__arm__)
     return 31 - __builtin_clz(n | 1);
 #elif defined(__x86_64__)
 #warning Fallback to x64 assembly
@@ -106,7 +106,17 @@ private:
 #warning Generic implementation
     if (n == 0)
       return 0;
-    return ffsll(~bfill(n)) - 2;
+   size_t a = bfill(n);
+   a = a & ~(a >> 1);
+   size_t i = 0;
+   if (a & 0b10101010101010101010101010101010) i |= 1;
+   if (a & 0b11001100110011001100110011001100) i |= 2;
+   if (a & 0b11110000111100001111000011110000) i |= 4;
+   if (a & 0b11111111000000001111111100000000) i |= 8;
+   if (a & 0b11111111111111110000000000000000) i |= 16;
+#if SIZE_MAX > 4294967295ull
+   if (a & 0b1111111111111111111111111111111100000000000000000000000000000000ull) i |= 32;
+#endif
 #endif
   }
 
