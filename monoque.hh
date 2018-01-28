@@ -431,7 +431,7 @@ public:
     s = size_pv;
     tie (i1, i2) = index_pv(s);
     
-    if (i2 == 0) {
+    if (data_pv[i1] == nullptr) {
       data_pv[i1] = Allocator::allocate(sizeat_pv(s));
     }
     this->Allocator::construct(data_pv[i1] + i2, std::move(t));
