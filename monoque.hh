@@ -89,8 +89,10 @@ private:
 
 private:
   static inline size_t index1_pv(size_t n) {
-#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull
+#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull && ULONG_LONG_MAX == SIZE_MAX
     return 63 - __builtin_clzll(n | 1);
+#elif defined(__GNUC__) && SIZE_MAX == 4294967295ull && UINT_MAX == SIZE_MAX
+    return 31 - __builtin_clz(n | 1);
 #elif defined(__x86_64__)
 #warning Fallback to x64 assembly
     if (n == 0)
@@ -101,6 +103,7 @@ private:
       return i;
     }
 #else
+#warning Generic implementation
     if (n == 0)
       return 0;
     return ffsll(~bfill(n)) - 2;
@@ -108,9 +111,12 @@ private:
   }
 
   static inline size_t sizeat_pv(size_t at) {
-#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull
+#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull && ULONG_LONG_MAX == SIZE_MAX
     static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
+
     return 1 << (64 - __builtin_clzll((at >> 1) | 1));
+#elif defined(__GNUC__) && SIZE_MAX == 4294967295ull && UINT_MAX == SIZE_MAX
+    return 1 << (32 - __builtin_clz((at >> 1) | 1));
 #elif defined(__x86_64__)
 #warning Fell back to inline assembly?
     if (at == 0)
@@ -128,9 +134,12 @@ private:
   }
 
   static inline size_t index2_pv(size_t n) {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull && ULONG_LONG_MAX == SIZE_MAX
     static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
     return n & ((1 << (63 - __builtin_clzll(n | 2))) - 1);
+#elif defined(__GNUC__) && SIZE_MAX == 4294967295ull && UINT_MAX == SIZE_MAX
+    static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
+    return n & ((1 << (31 - __builtin_clz(n | 2))) - 1);
 #elif defined(__x86_64__)
     if (n <= 1)
       return n & 1;
@@ -140,6 +149,7 @@ private:
       return n ^ (size_t(1) << i);
     }
 #else
+#warning Generic implementation used.
     return n & (bfill(n) >> 1);
 #endif
   }
