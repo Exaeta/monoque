@@ -413,6 +413,20 @@ public:
     return;
   }
 
+  void assign( std::initializer_list<T> ilist )
+  {
+    assign(ilist.begin(), ilist.end());
+  }
+
+  void assign( size_type count, const T& value )
+  {
+    clear();
+    for (size_t i = 0; i < count; i++)
+    {
+      push_back(value);
+    }
+  }
+
   reference at(size_type pos) {
     if (!(pos < size()))
       throw std::out_of_range("nope.avi");
