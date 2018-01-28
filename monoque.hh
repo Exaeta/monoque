@@ -413,6 +413,18 @@ public:
     return;
   }
 
+  reference at(size_type pos) {
+    if (!(pos < size()))
+      throw std::out_of_range("nope.avi");
+    return this->operator[](pos);
+  }
+
+  const_reference at(size_type pos) const {
+    if (!(pos < size()))
+      throw std::out_of_range("nope.avi");
+    return this->operator[](pos);
+  }
+
   void clear() {
     monoque<T, Allocator> obj(get_allocator());
     swap(obj);
