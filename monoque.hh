@@ -107,7 +107,7 @@ private:
     if (n == 0)
       return 0;
     size_t n2 = 0;
-    while (n != 1) { n >>=1; n2 ++ }
+    while (n != 1) { n >>=1; n2 ++; }
     return n2;
    size_t a = bfill(n);
    a = a & ~(a >> 1);
