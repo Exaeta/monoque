@@ -413,6 +413,8 @@ public:
     return;
   }
 
+  bool empty() const { return size() == 0; }
+
   inline void resize(size_type n) {
     while (size() > n)
       pop_back();
