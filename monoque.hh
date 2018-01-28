@@ -103,7 +103,7 @@ private:
       return i;
     }
 #else
-#error Broken
+#pragma warning Generic implementation
     if (n == 0)
       return 0;
    size_t a = bfill(n);
@@ -117,7 +117,7 @@ private:
 #if SIZE_MAX > 4294967295ull
    if (a & 0b1111111111111111111111111111111100000000000000000000000000000000ull) i |= 32;
 #endif
-    return a;
+    return i;
 #endif
   }
 
