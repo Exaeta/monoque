@@ -425,10 +425,16 @@ public:
   }
 
   inline void push_back(T t) {
-    if (index2_pv(size_pv) == 0 && nullptr == data_pv[index1_pv(size_pv)]) {
-      data_pv[index1_pv(size_pv)] = Allocator::allocate(sizeat_pv(size_pv));
+    using namespace std;
+    
+    size_t i1, i2, s;
+    s = size_pv;
+    tie (i1, i2) = index_pv(s);
+    
+    if (i2 == 0) {
+      data_pv[i1] = Allocator::allocate(sizeat_pv(s));
     }
-    this->Allocator::construct(data_pv[index1_pv(size_pv)] + index2_pv(size_pv), std::move(t));
+    this->Allocator::construct(data_pv[i1] + i2, std::move(t));
     size_pv++;
   }
 

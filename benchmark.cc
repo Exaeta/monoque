@@ -47,7 +47,7 @@ int main() {
   size_t round_count = 1024*1024*128;
   size_t round_secondary = round_count * 0.25;
   double round_mult = 0.001;
-  size_t runs = 3;
+  size_t runs = 10;
   
 
   vector<size_t> rds;
@@ -89,8 +89,8 @@ int main() {
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
     //cout << t << ' ' << fast_access << endl;
   }
-  cout << "vector<size_t> average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "vector<size_t> average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
+  cout << "vector<size_t> best average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
+  cout << "vector<size_t> best average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -114,8 +114,8 @@ int main() {
     fast_access = std::min(fast_access, (double)(duration_cast<nanoseconds>(end_time - start_time).count()));
   //  cout << t << ' ' << fast_access << endl;
   }
-  cout << "monoque<size_t> average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "monoque<size_t> average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
+  cout << "monoque<size_t> best average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
+  cout << "monoque<size_t> best average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -140,8 +140,8 @@ int main() {
     //cout << t << ' ' << fast_access << endl;
   }
 
-  cout << "deque<size_t> average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "deque<size_t> average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
+  cout << "deque<size_t> best average push_back time: " << fast_push / round_count << " nanoseconds" << endl;
+  cout << "deque<size_t> best average random access time: " << fast_access / round_secondary << " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -168,8 +168,8 @@ int main() {
    // cout << t << ' ' << fast_access << endl;
   }
 
-  cout << "priority_queue<size_t, vector> average push() time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "priority_queue<size_t, vector> average top()+pop()+push() time: " << fast_access / round_count /round_mult<< " nanoseconds" << endl;
+  cout << "priority_queue<size_t, vector> best average push() time: " << fast_push / round_count << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, vector> best average top()+pop()+push() time: " << fast_access / round_count /round_mult<< " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -196,8 +196,8 @@ int main() {
     //cout << t << ' ' << fast_access << endl;
   }
 
-  cout << "priority_queue<size_t, monoque> average push() time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "priority_queue<size_t, monoque> average top()+pop()+push() time: " << fast_access / round_count /round_mult << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, monoque> best average push() time: " << fast_push / round_count << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, monoque> best average top()+pop()+push() time: " << fast_access / round_count /round_mult << " nanoseconds" << endl;
 
   fast_push = std::numeric_limits<double>::max();
   fast_access = std::numeric_limits<double>::max();
@@ -224,6 +224,6 @@ int main() {
   //  cout << t << ' ' << fast_access << endl;
   }
 
-  cout << "priority_queue<size_t, deque> average push() time: " << fast_push / round_count << " nanoseconds" << endl;
-  cout << "priority_queue<size_t, deque> average top()+pop()+push() time: " << fast_access / round_count / round_mult << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, deque> best average push() time: " << fast_push / round_count << " nanoseconds" << endl;
+  cout << "priority_queue<size_t, deque> best average top()+pop()+push() time: " << fast_access / round_count / round_mult << " nanoseconds" << endl;
 }
