@@ -35,6 +35,8 @@ SOFTWARE.
 #include <inttypes.h>
 #include <sys/types.h>
 #include <string.h>
+#include <stdint.h>
+#include <limits.h>
 /*
   Like vector, but non-contiguous and has worst-case O(1) push_back and
   worst-case O(1) indexing.
@@ -88,8 +90,11 @@ private:
   }
 
 private:
-  static inline size_t index1_pv(size_t n) __attribute__((always_inline)) {
-#ifdef __x86_64__
+  static inline size_t index1_pv(size_t n) {
+#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull
+    return 63-__builtin_clzll(n|1);
+#elif defined(__x86_64__)
+#warning Fallback to x64 assembly
     if (n == 0)
       return 0;
     else {
@@ -103,14 +108,18 @@ private:
 #endif
   }
 
-  static inline size_t sizeat_pv(size_t at) __attribute__((always_inline)) {
-#ifdef __x86_64__
+  static inline size_t sizeat_pv(size_t at) {
+#if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull
+	  static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
+	  return 1 << (64 - __builtin_clzll((at>>1)|1));
+#elif defined(__x86_64__)
+#warning Fell back to inline assembly?
     if (at == 0) return 2;
     size_t i;
     asm("bsrq %1,%0\n" : "=r"(i) : "r"(at));
     return size_t(1) << i;
 #else
-    //assert(bfill(at >> 1) == (bfill(at) >> 1));
+#warning Generic implementation may be slow.
     if (at == 0)
       return 2;
     else
@@ -118,10 +127,14 @@ private:
 #endif      
   }
 
-  static inline size_t index2_pv(size_t n) __attribute__((always_inline)) {   
-#if defined(__x86_64__) //&& !defined(__clang__)
+  static inline size_t index2_pv(size_t n) 
+  { 
+#if defined(__GNUC__)
+      static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
+      return n&((1 << (63 - __builtin_clzll(n|2))) -1);
+#elif defined(__x86_64__)
     // No idea why, but for some reason this is slow as fuck in clang -O2.
-    if (rpnx_unlikely(n <= 1))
+    if (n <= 1)
       return n & 1;
     else {
       size_t i;
@@ -133,7 +146,10 @@ private:
 #endif
   }
 
-  static inline std::tuple<size_t, size_t> index_pv(size_t at) __attribute__((always_inline)) { return std::tuple<size_t, size_t>{index1_pv(at), index2_pv(at)}; }
+  static inline std::tuple<size_t, size_t> index_pv(size_t at) 
+  { 
+    return std::tuple<size_t, size_t>{index1_pv(at), index2_pv(at)};
+  }
 
   void check_cleanup() {}
 
@@ -365,8 +381,7 @@ public:
     size_t index1;
     size_t index2;
 
-    index1 = index1_pv(at);
-    index2 = index2_pv(at);
+    tie(index1, index2) = index_pv(at);
 
     return data_pv[index1][index2];
   }

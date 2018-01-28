@@ -35,6 +35,7 @@ SOFTWARE.
 #include <thread>
 #include <inttypes.h>
 #include <vector>
+
 volatile size_t vol = 0;
 int main() {
   using namespace std;
@@ -43,9 +44,9 @@ int main() {
 
   mt19937_64 r;
 
-  size_t round_count = 1024*1024*4;
-  size_t round_secondary = round_count * 4.0;
-  double round_mult = 1.0/4;
+  size_t round_count = 1024*1024*128;
+  size_t round_secondary = round_count * 0.25;
+  double round_mult = 0.001;
   size_t runs = 3;
   
 
