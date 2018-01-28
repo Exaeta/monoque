@@ -449,6 +449,22 @@ public:
     std::swap(data_pv, other.data_pv);
     std::swap(size_pv, other.size_pv);
   }
+  
+  template <typename ... Ts>
+  void emplace_back(Ts && ...ts)
+  {
+    using namespace std;
+    
+    size_t i1, i2, s;
+    s = size_pv;
+    tie (i1, i2) = index_pv(s);
+    
+    if (data_pv[i1] == nullptr) {
+      data_pv[i1] = this->Allocator::allocate(sizeat_pv(s));
+    }
+    this->Allocator::construct(data_pv[i1] + i2, std::forward<Ts>(ts)...);
+    size_pv++;
+  }
 
   friend void swap(rpnx::monoque<T, Allocator> &a, rpnx::monoque<T, Allocator> &b) { a.swap(b); }
 
