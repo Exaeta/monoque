@@ -413,16 +413,11 @@ public:
     return;
   }
 
-  void assign( std::initializer_list<T> ilist )
-  {
-    assign(ilist.begin(), ilist.end());
-  }
+  void assign(std::initializer_list<T> ilist) { assign(ilist.begin(), ilist.end()); }
 
-  void assign( size_type count, const T& value )
-  {
+  void assign(size_type count, const T &value) {
     clear();
-    for (size_t i = 0; i < count; i++)
-    {
+    for (size_t i = 0; i < count; i++) {
       push_back(value);
     }
   }
