@@ -30,13 +30,13 @@ SOFTWARE.
 #include <array>
 #include <assert.h>
 #include <atomic>
-#include <iterator>
-#include <tuple>
 #include <inttypes.h>
-#include <sys/types.h>
-#include <string.h>
-#include <stdint.h>
+#include <iterator>
 #include <limits.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/types.h>
+#include <tuple>
 /*
   Like vector, but non-contiguous and has worst-case O(1) push_back and
   worst-case O(1) indexing.
@@ -58,8 +58,6 @@ SOFTWARE.
 #define rpnx_unlikely(x) rpnx_expect(x, 0)
 #endif
 
-
-
 namespace rpnx {
 template <typename T, typename Allocator = std::allocator<T>> class monoque : private Allocator {
 public:
@@ -78,21 +76,21 @@ private:
   size_t size_pv;
   std::array<pointer, sizeof(T *) * 8> data_pv;
 
-  static inline size_t bfill(size_t n)
-  {
+  static inline size_t bfill(size_t n) {
     n |= n >> 1;
     n |= n >> 2;
     n |= n >> 4;
     n |= n >> 8;
     n |= n >> 16;
-    if (sizeof(size_t) > 4) n |= n >> 32;
+    if (sizeof(size_t) > 4)
+      n |= n >> 32;
     return n;
   }
 
 private:
   static inline size_t index1_pv(size_t n) {
 #if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull
-    return 63-__builtin_clzll(n|1);
+    return 63 - __builtin_clzll(n | 1);
 #elif defined(__x86_64__)
 #warning Fallback to x64 assembly
     if (n == 0)
@@ -103,18 +101,20 @@ private:
       return i;
     }
 #else
-    if (n == 0) return 0;
-    return ffsll(~bfill(n))-2;
+    if (n == 0)
+      return 0;
+    return ffsll(~bfill(n)) - 2;
 #endif
   }
 
   static inline size_t sizeat_pv(size_t at) {
 #if defined(__GNUC__) && SIZE_MAX == 18446744073709551615ull
-	  static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
-	  return 1 << (64 - __builtin_clzll((at>>1)|1));
+    static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
+    return 1 << (64 - __builtin_clzll((at >> 1) | 1));
 #elif defined(__x86_64__)
 #warning Fell back to inline assembly?
-    if (at == 0) return 2;
+    if (at == 0)
+      return 2;
     size_t i;
     asm("bsrq %1,%0\n" : "=r"(i) : "r"(at));
     return size_t(1) << i;
@@ -123,15 +123,14 @@ private:
     if (at == 0)
       return 2;
     else
-     return bfill(at >> 1) + 1;    
-#endif      
+      return bfill(at >> 1) + 1;
+#endif
   }
 
-  static inline size_t index2_pv(size_t n) 
-  { 
+  static inline size_t index2_pv(size_t n) {
 #if defined(__GNUC__)
-      static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
-      return n&((1 << (63 - __builtin_clzll(n|2))) -1);
+    static_assert(sizeof(unsigned long long) == 8, "This is a bug.");
+    return n & ((1 << (63 - __builtin_clzll(n | 2))) - 1);
 #elif defined(__x86_64__)
     // No idea why, but for some reason this is slow as fuck in clang -O2.
     if (n <= 1)
@@ -142,14 +141,11 @@ private:
       return n ^ (size_t(1) << i);
     }
 #else
-    return n & (bfill(n) >> 1) ;
+    return n & (bfill(n) >> 1);
 #endif
   }
 
-  static inline std::tuple<size_t, size_t> index_pv(size_t at) 
-  { 
-    return std::tuple<size_t, size_t>{index1_pv(at), index2_pv(at)};
-  }
+  static inline std::tuple<size_t, size_t> index_pv(size_t at) { return std::tuple<size_t, size_t>{index1_pv(at), index2_pv(at)}; }
 
   void check_cleanup() {}
 
@@ -426,11 +422,11 @@ public:
 
   inline void push_back(T t) {
     using namespace std;
-    
+
     size_t i1, i2, s;
     s = size_pv;
-    tie (i1, i2) = index_pv(s);
-    
+    tie(i1, i2) = index_pv(s);
+
     if (data_pv[i1] == nullptr) {
       data_pv[i1] = Allocator::allocate(sizeat_pv(s));
     }
@@ -449,16 +445,14 @@ public:
     std::swap(data_pv, other.data_pv);
     std::swap(size_pv, other.size_pv);
   }
-  
-  template <typename ... Ts>
-  void emplace_back(Ts && ...ts)
-  {
+
+  template <typename... Ts> void emplace_back(Ts &&... ts) {
     using namespace std;
-    
+
     size_t i1, i2, s;
     s = size_pv;
-    tie (i1, i2) = index_pv(s);
-    
+    tie(i1, i2) = index_pv(s);
+
     if (data_pv[i1] == nullptr) {
       data_pv[i1] = this->Allocator::allocate(sizeat_pv(s));
     }
